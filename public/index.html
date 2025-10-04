@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HelpDesk Mini</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Tickets</a>
+      <a href="/new.html">New Ticket</a>
+    </nav>
+    <main>
+      <h1>Tickets</h1>
+      <div>
+        <input id="q" placeholder="search title/description/comments" />
+        <button id="search">Search</button>
+      </div>
+      <ul id="tickets"></ul>
+      <div id="pager"></div>
+    </main>
+    <script type="module">
+      const headers = { 'X-User-Email': 'alice@example.com', 'X-User-Role': 'user', 'Content-Type': 'application/json' };
+      let offset = 0; const limit = 10;
+      async function load() {
+        const q = document.getElementById('q').value;
+        const params = new URLSearchParams({ limit, offset });
+        if (q) params.set('q', q);
+        const res = await fetch(`/api/tickets?${params.toString()}`, { headers });
+        const data = await res.json();
+        const ul = document.getElementById('tickets');
+        ul.innerHTML = '';
+        data.items.forEach(t => {
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="/ticket.html?id=${t.id}">#${t.id} ${t.title}</a> — ${t.status} — ${t.sla_breached ? 'BREACHED' : ''}`;
+          ul.appendChild(li);
+        });
+        const pager = document.getElementById('pager');
+        pager.innerHTML = '';
+        const prev = document.createElement('button'); prev.textContent = 'Prev'; prev.onclick = () => { offset = Math.max(0, offset - limit); load(); };
+        const next = document.createElement('button'); next.textContent = 'Next'; next.onclick = () => { offset += limit; load(); };
+        pager.append(prev, next);
+      }
+      document.getElementById('search').onclick = () => { offset = 0; load(); };
+      load();
+    </script>
+  </body>
+</html>

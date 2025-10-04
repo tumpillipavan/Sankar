@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>New Ticket</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Tickets</a>
+      <a href="/new.html">New Ticket</a>
+    </nav>
+    <main>
+      <h1>Create Ticket</h1>
+      <form id="f">
+        <input name="title" placeholder="title" required />
+        <textarea name="description" placeholder="description" required></textarea>
+        <select name="priority">
+          <option value="low">low</option>
+          <option value="normal" selected>normal</option>
+          <option value="high">high</option>
+          <option value="urgent">urgent</option>
+        </select>
+        <button>Create</button>
+      </form>
+    </main>
+    <script type="module">
+      const headers = { 'X-User-Email': 'alice@example.com', 'X-User-Role': 'user', 'Content-Type': 'application/json' };
+      document.getElementById('f').onsubmit = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const body = {
+          title: form.title.value,
+          description: form.description.value,
+          priority: form.priority.value
+        };
+        const res = await fetch('/api/tickets', { method: 'POST', headers, body: JSON.stringify(body) });
+        const t = await res.json();
+        if (res.ok) {
+          location.href = `/ticket.html?id=${t.id}`;
+        } else {
+          alert(JSON.stringify(t));
+        }
+      };
+    </script>
+  </body>
+</html>
