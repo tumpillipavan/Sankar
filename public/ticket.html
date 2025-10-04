@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ticket</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <nav>
+      <a href="/">Tickets</a>
+      <a href="/new.html">New Ticket</a>
+    </nav>
+    <main>
+      <div id="ticket"></div>
+      <h3>Comments</h3>
+      <ul id="comments"></ul>
+      <form id="commentForm">
+        <textarea name="body" placeholder="Add a comment..."></textarea>
+        <button>Add Comment</button>
+      </form>
+      <h3>Timeline</h3>
+      <ul id="timeline"></ul>
+    </main>
+    <script type="module">
+      const headersUser = { 'X-User-Email': 'alice@example.com', 'X-User-Role': 'user', 'Content-Type': 'application/json' };
+      const headersAgent = { 'X-User-Email': 'bob@example.com', 'X-User-Role': 'agent', 'Content-Type': 'application/json' };
+      const id = new URLSearchParams(location.search).get('id');
+      async function load() {
+        const res = await fetch(`/api/tickets/${id}`, { headers: headersUser });
+        const data = await res.json();
+        const t = data.ticket;
+        document.getElementById('ticket').innerHTML = `
+          <h1>#${t.id} ${t.title}</h1>
+          <div>Status: ${t.status} | Priority: ${t.priority} | ${t.sla_breached ? 'BREACHED' : ''}</div>
+          <div>Version: ${t.version}</div>
+          <button id="resolve">Mark Resolved</button>
+        `;
+        document.getElementById('resolve').onclick = async () => {
+          const res2 = await fetch(`/api/tickets/${id}`, { method: 'PATCH', headers: headersAgent, body: JSON.stringify({ status: 'resolved', version: t.version }) });
+          if (res2.status === 409) alert('Version conflict, refresh!');
+          load();
+        };
+        const ul = document.getElementById('comments');
+        ul.innerHTML = '';
+        data.comments.forEach(c => {
+          const li = document.createElement('li');
+          li.textContent = c.body;
+          ul.appendChild(li);
+        });
+        const tl = document.getElementById('timeline');
+        tl.innerHTML = '';
+        data.timeline.forEach(ev => {
+          const li = document.createElement('li');
+          li.textContent = `${ev.created_at} - ${ev.type}: ${ev.message}`;
+          tl.appendChild(li);
+        });
+      }
+
+      document.getElementById('commentForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const body = { body: e.target.body.value };
+        await fetch(`/api/tickets/${id}/comments`, { method: 'POST', headers: headersUser, body: JSON.stringify(body) });
+        e.target.body.value = '';
+        load();
+      };
+
+      load();
+    </script>
+  </body>
+</html>
